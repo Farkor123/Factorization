@@ -11,8 +11,9 @@ namespace number_theorem {
     return num;
   }
 
-  void lookup_table (unsigned long int& num) {
-    int arr[65537] = {2};
+  std::vector<mpz_class> lookup_table (mpz_class& num) {
+    mpz_class arr[65537] = {2};
+    std::vector<mpz_class> vec;
     for (int i = 2; i < 65537; i++) {
       if (i % 2 == 0) {
         arr[i] = 2;
@@ -22,67 +23,42 @@ namespace number_theorem {
       }
     }
     while (num != 1) {
-      std::cout << arr[num];
-      num /= arr[num];
-      if(num != 1) {
-        std::cout << "*";
+      vec.push_back(arr[num.get_ui()]);
+      num /= arr[num.get_ui()];
       }
-    }
-    std::cout << "\n";
+    std::sort(vec.begin(), vec.end());
+    return vec;
   }
 
-  bool miller_rabin_test (const mpz_t& _d, const mpz_t& _n) {
-    mpz_t a, d, n, temp;
-    mpz_init(temp);
-    mpz_init_set(d, _d);
-    mpz_init_set(n, _n);
-    mpz_init_set_ui(a, rand());
-    mpz_sub_ui(temp, n, 4);
-    mpz_mod(a, a, temp);
-    mpz_add_ui(a, a, 2);
-    mpz_sub_ui(temp, n, 1);
-    utility::mpz_pow_mod(a, a, d, n);
-    if (mpz_cmp_ui(a, 1) == 0 || mpz_cmp(a, temp) == 0) {
+  bool miller_rabin_test (mpz_class d, const mpz_class& n) {
+    mpz_class x = 2 + rand() % (n-4);
+    x = utility::pow_mod(x, d, n);
+    if (x == 1 || x == n-1) {
       return true;
     }
-    while (mpz_cmp(d, temp) != 0) {
-      mpz_mul(a, a, a);
-      mpz_mod(a, a, n);
-      mpz_mul_ui(d, d, 2);
-      if (mpz_cmp_ui(a, 1) == 0) {
-        mpz_clear(a);
-        mpz_clear(d);
-        mpz_clear(n);
-        mpz_clear(temp);
+    while (d != n-1) {
+      x = (x * x) % n;
+      d *= 2;
+      if (x == 1) {
         return false;
       }
-      if (mpz_cmp(a, temp) == 0) {
-        mpz_clear(a);
-        mpz_clear(d);
-        mpz_clear(n);
-        mpz_clear(temp);
+      if (x == n-1) {
         return true;
       }
     }
-    mpz_clear(a);
-    mpz_clear(d);
-    mpz_clear(n);
-    mpz_clear(temp);
     return false;
   }
 
-  bool is_prime(const mpz_t &num, int k = 256) {
-    if (mpz_cmp_ui(num, 1) <= 0 || mpz_cmp_ui(num, 4) == 0) {
+  bool is_prime(const mpz_class &num, int k = 256) {
+    if (num <= 1 || num == 4) {
       return false;
     }
-    if (mpz_cmp_ui(num, 3) == 0 || mpz_cmp_ui(num, 2) == 0) {
+    if (num == 2 || num == 3) {
       return true;
     }
-    mpz_t d;
-    mpz_init(d);
-    mpz_sub_ui(d, num, 1);
-    while (mpz_even_p(d) != 0) {
-      mpz_fdiv_q_ui(d, d, 2);
+    mpz_class d = num - 1;
+    while (d % 2 == 0) {
+      d /= 2;
     }
     for (int i = 0; i < k; i++) {
       if(!miller_rabin_test(d, num)) {
@@ -92,20 +68,49 @@ namespace number_theorem {
     return true;
   }
 
-  void pollard_rho (mpz_t& num) {
-    mpz_t x[100001];
-    mpz_t q, d, diff;
-    mpz_init_set_ui(q, 1);
-    mpz_inits(d, diff);
-    mpz_init_set_ui(x[1], 3);
-    mpz_init_set_ui(x[2], 8);
-    for (int i = 1; ; i++) {
-      mpz_sub(diff, x[2*i], x[i]);
-      mpz_mul(q, q, diff);
-      mpz_gcd(d, q, num);
-      if (mpz_cmp_ui(d, 1) > 0) {
-        std::cout << d << "*";
+  std::vector<mpz_class> pollard_rho (mpz_class& num) {
+    std::vector<mpz_class> x;
+    std::vector<mpz_class> ret;
+    while (num % 2 == 0) {
+      ret.push_back(mpz_class("2", 10));
+      num /= 2;
+    }
+    x.push_back(mpz_class("2", 10));
+    x.push_back(mpz_class("3", 10));
+    x.push_back(mpz_class("8", 10));
+    mpz_class q = 1, d;
+    for (int i = 1; num != 1; i++) {
+      bool flag = true;
+      q *= (x[2*i] - x[i]) % num;
+      d = utility::gcd(q, num);
+      if (d > 1 && d < num) {
+        if (is_prime(d)) {
+          ret.push_back(d);
+          num /= d;
+          for (auto n : x) {
+            n %= num;
+          }
+          i = 1;
+          q = 1;
+          flag = false;
+        }
+        else if (d < 65537) {
+          ret.insert(ret.end(), lookup_table(d).begin(), lookup_table(d).end());
+          num /= d;
+          for (auto n : x) {
+            n %= num;
+          }
+          i = 1;
+          q = 1;
+          flag = false;
+        }
+      }
+      if (flag) {
+        x.push_back(mpz_class((x.back() * x.back()) % num));
+        x.push_back(mpz_class((x.back() * x.back()) % num));
       }
     }
+    std::sort(x.begin(), x.end());
+    return x;
   }
 }
