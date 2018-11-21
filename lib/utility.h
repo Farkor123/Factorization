@@ -6,8 +6,11 @@
 namespace utility {
 
   mpz_class gcd (mpz_class a, mpz_class b) {
-    while (b) {
-      b ^= a ^= b ^= a %= b;
+    mpz_class c;
+    while (b != 0) {
+      c = a % b;
+      a = b;
+      b = c;
     }
     return a;
   }

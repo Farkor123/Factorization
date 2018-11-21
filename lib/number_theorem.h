@@ -71,46 +71,98 @@ namespace number_theorem {
   std::vector<mpz_class> pollard_rho (mpz_class& num) {
     std::vector<mpz_class> x;
     std::vector<mpz_class> ret;
+    //simply dividing by 2, ez one
     while (num % 2 == 0) {
-      ret.push_back(mpz_class("2", 10));
+      ret.push_back(2);
       num /= 2;
     }
-    x.push_back(mpz_class("2", 10));
-    x.push_back(mpz_class("3", 10));
-    x.push_back(mpz_class("8", 10));
+    //if num was 2**n, no point to continue
+    if (num == 1) {
+      return ret;
+    }
+    //innitialise algorithm
+    x.push_back(mpz_class(2));
+    x.push_back(mpz_class(3));
+    x.push_back(mpz_class(8));
     mpz_class q = 1, d;
     for (int i = 1; num != 1; i++) {
+      //if at any point num is prime, we are finished
+      if(is_prime(num)) {
+        ret.push_back(num);
+        std::sort(ret.begin(), ret.end());
+        return ret;
+      }
+      //if num < 2**16 we can use lookup_table
+      if(num < 65537) {
+        auto w = lookup_table(num);
+        ret.insert(ret.end(), w.begin(), w.end());
+        std::sort(ret.begin(), ret.end());
+        return ret;
+      }
       bool flag = true;
       q *= (x[2*i] - x[i]) % num;
       d = utility::gcd(q, num);
       if (d > 1 && d < num) {
+        //if d is prime, divide num by it
         if (is_prime(d)) {
           ret.push_back(d);
           num /= d;
           for (auto n : x) {
             n %= num;
           }
-          i = 1;
+          i = 0;
           q = 1;
           flag = false;
         }
+        //if d isn't prime and d < 65537 we can factor it by lookup_table
         else if (d < 65537) {
-          ret.insert(ret.end(), lookup_table(d).begin(), lookup_table(d).end());
+          //std::cout << "DUPA";
           num /= d;
+          auto w = lookup_table(d);
+          ret.insert(ret.end(), w.begin(), w.end());
           for (auto n : x) {
             n %= num;
           }
-          i = 1;
+          i = 0;
+          q = 1;
+          flag = false;
+        }
+        //else we can factor it by pollard_rho
+        else {
+          num /= d;
+          auto w = pollard_rho(d);
+          ret.insert(ret.end(), w.begin(), w.end());
+          for (auto n : x) {
+            n %= num;
+          }
+          i = 0;
           q = 1;
           flag = false;
         }
       }
+      //if d is equal to num, we have to start with different x0
+      if (d == num) {
+        srand(time(NULL));
+        x.clear();
+        x.push_back(mpz_class(rand() % (num-2) + 2));
+        x.push_back(mpz_class(((x.back() * x.back()) - 1) % num));
+        x.push_back(mpz_class(((x.back() * x.back()) - 1) % num));
+        i = 0;
+        q = 1;
+        flag = false;
+      }
+      //finally, if none of the above applies, we increment i by 1
       if (flag) {
-        x.push_back(mpz_class((x.back() * x.back()) % num));
-        x.push_back(mpz_class((x.back() * x.back()) % num));
+        //any non-factorable polynomial applies, except for x**2-2
+        x.push_back(mpz_class(((x.back() * x.back()) - 1) % num));
+        x.push_back(mpz_class(((x.back() * x.back()) - 1) % num));
       }
     }
     std::sort(x.begin(), x.end());
     return x;
+  }
+
+  std::vector<mpz_class> brent_pollard_rho(mpz_class& num) {
+
   }
 }
