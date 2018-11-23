@@ -1,7 +1,7 @@
 #include "../lib/number_theorem.h"
-
+#include <unistd.h>
 int main() {
-  system("clear");
+  /*system("clear");
   mpz_class num, comparator;
   std::cout << "Input number: ";
   std::cin >> num;
@@ -39,6 +39,29 @@ int main() {
     std::cout << "Quadratic Sieve.\n";
     return 0;
   }
-  std::cout << "General Number Field Sieve.\n";
+  std::cout << "General Number Field Sieve.\n";*/
+  gmp_randclass r(gmp_randinit_default);
+  while (true) {
+    mpz_class num;
+    mpz_ui_pow_ui(num.get_mpz_t(), 2, 70);
+    mpz_class y, z, c = 1;
+    y = z = r.get_z_range(num);
+    std::cout << y << "\n";
+    auto w = number_theorem::simpler_pollard_rho(y);
+    for (auto i : w) {
+      c *= i;
+    }
+    if (c == z) {
+      std::cout << " Yes: ";
+      for (unsigned int i = 0; i < w.size()-1; i++) {
+        std::cout << w[i] << "*";
+      }
+      std::cout << w.back() << "\n";
+    }
+    else {
+      std::cout << " No\n";
+      return -1;
+    }
+  }
   return 0;
 }

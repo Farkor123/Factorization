@@ -27,4 +27,8 @@ namespace utility {
     }
     return ret;
   }
+
+  mpz_class x_squared_minus_one(const mpz_class& x) {
+    return x*x-1;
+  }
 }
