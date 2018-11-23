@@ -70,139 +70,69 @@ namespace number_theorem {
 
   std::vector<mpz_class> pollard_rho (mpz_class& num) {
     /*
-     *  Actually, this implementation comes directly from J. M. Pollard's paper "AMonte Carlo method for factorization"
+     *  Pollard's Monte Carlo as stated in his paper
+     *  "A Monte Carlo method for factorization".
+     *  With few addidtions.
      */
-    std::vector<mpz_class> x;
+    //vector holding all factors
     std::vector<mpz_class> ret;
-    //simply dividing by 2, ez one
-    while (num % 2 == 0) {
-      ret.push_back(2);
-      num /= 2;
-    }
-    //if num was 2**n, no point to continue
-    if (num == 1) {
-      return ret;
-    }
-    //innitialise algorithm
-    x.push_back(mpz_class(2));
-    x.push_back(mpz_class(3));
-    x.push_back(mpz_class(8));
-    mpz_class q = 1, d;
-    for (int i = 1; num != 1; i++) {
-      //if at any point num is prime, we are finished
-      if(is_prime(num)) {
-        ret.push_back(num);
-        std::sort(ret.begin(), ret.end());
-        return ret;
-      }
-      //if num < 2**16 we can use lookup_table
-      if(num < 65537) {
-        auto w = lookup_table(num);
-        ret.insert(ret.end(), w.begin(), w.end());
-        std::sort(ret.begin(), ret.end());
-        return ret;
-      }
-      q *= (x[2*i] - x[i]) % num;
-      d = utility::gcd(abs(q), num);
-      if (d > 1 && d < num) {
-        //if d is prime, divide num by it
-        if (is_prime(d)) {
-          ret.push_back(d);
-          num /= d;
-          for (auto n : x) {
-            n %= num;
-          }
-          i = 0;
-          q = 1;
-        }
-        //if d isn't prime and d < 65537 we can factor it by lookup_table
-        else if (d < 65537) {
-          //std::cout << "DUPA";
-          num /= d;
-          auto w = lookup_table(d);
-          ret.insert(ret.end(), w.begin(), w.end());
-          for (auto n : x) {
-            n %= num;
-          }
-          i = 0;
-          q = 1;
-        }
-        //else we can factor it by pollard_rho
-        else {
-          num /= d;
-          auto w = pollard_rho(d);
-          ret.insert(ret.end(), w.begin(), w.end());
-          for (auto n : x) {
-            n %= num;
-          }
-          i = 0;
-          q = 1;
-        }
-      }
-      //if d is equal to num, we have to start with different x0
-      else if (d == num) {
-        srand(time(NULL));
-        x.clear();
-        x.push_back(mpz_class(rand() % (num-2) + 2));
-        x.push_back(utility::x_squared_minus_one(x.back()) % num);
-        x.push_back(utility::x_squared_minus_one(x.back()) % num);
-        i = 0;
-        q = 1;
-      }
-      //finally, if none of the above applies, we increment i by 1
-      else {
-        //any non-factorable polynomial applies, except for x**2-2
-        x.push_back(utility::x_squared_minus_one(x.back()) % num);
-        x.push_back(utility::x_squared_minus_one(x.back()) % num);
-      }
-    }
-    std::sort(x.begin(), x.end());
-    return x;
-  }
-
-  std::vector<mpz_class> simpler_pollard_rho (mpz_class& num) {
-    std::vector<mpz_class> ret;
+    //  Innitialize random number generator.
     gmp_randclass r(gmp_randinit_default);
+    //  Checking %2 is cheap, so we do that.
     while (num % 2 == 0) {
       ret.push_back(2);
       num /= 2;
     }
+    //  If num was power of two, we can return.
     if (num == 1) {
       std::sort(ret.begin(), ret.end());
       return ret;
     }
+    //  If now num is lesser than 2**16, rho is overkill.
+    //  We use lookup table instead.
     if (num < 65537) {
       auto w = lookup_table(num);
       ret.insert(ret.end(), w.begin(), w.end());
       std::sort(ret.begin(), ret.end());
       return ret;
     }
+    //  Rho doesn't like primes. We have to check it now.
     if (is_prime(num)) {
       ret.push_back(num);
       std::sort(ret.begin(), ret.end());
       return ret;
     }
+    //  Let's parametrize algorithm.
     mpz_class x = 2, y = 2, d = 1;
+    //  I know, goto.
+    //  But it's the simplest method, and doesn't crash.
     FLAG:
+    //  The hearth of Pollard's Rho.
     while (d == 1) {
       x = utility::x_squared_minus_one(x) % num;
       y = utility::x_squared_minus_one(utility::x_squared_minus_one(y)) % num;
       d = gcd(abs(x - y), num);
     }
+    //  If d==num, we can as well start from beginning,
+    //  with different parameters.
     if (d == num) {
       x = y = r.get_z_range(num-3)+3;
       d = 1;
       goto FLAG;
     }
     else {
+      //  Else, if d is prime it is a valid factor.
       if (is_prime(d)) {
         num /= d;
         ret.push_back(d);
+        //  If num is now prime, there is no point in further fctorization.
         if(is_prime(num)) {
           ret.push_back(num);
           std::sort(ret.begin(), ret.end());
           return ret;
         }
+        //  If now num is less than 2**16, rho is overkill.
+        //  We will factor it with lookup table.
         if (num < 65537) {
           auto w = lookup_table(num);
           ret.insert(ret.end(), w.begin(), w.end());
@@ -213,15 +143,20 @@ namespace number_theorem {
         d = 1;
         goto FLAG;
       }
+      //  If d ain't prime, but is less than 65537, rho is overkill.
+      //  We will use this complex d, factoring it with lookup table.
       else if(d < 65537) {
         num /= d;
         auto w = lookup_table(d);
         ret.insert(ret.end(), w.begin(), w.end());
+        //  If num is now prime, there is no point in further fctorization.
         if (is_prime(num)) {
           ret.push_back(num);
           std::sort(ret.begin(), ret.end());
           return ret;
         }
+        //  If now num is less than 2**16, rho is overkill.
+        //  We will factor it with lookup table.
         if (num < 65537) {
           auto w = lookup_table(num);
           ret.insert(ret.end(), w.begin(), w.end());
@@ -232,15 +167,19 @@ namespace number_theorem {
         d = 1;
         goto FLAG;
       }
+      //  However, if d > 2**16, we will just use Rho on it.
       else {
         num /= d;
         auto w = simpler_pollard_rho(d);
         ret.insert(ret.end(), w.begin(), w.end());
+        //  If num is now prime, there is no point in further fctorization.
         if (is_prime(num)) {
           ret.push_back(num);
           std::sort(ret.begin(), ret.end());
           return ret;
         }
+        //  If now num is less than 2**16, rho is overkill.
+        //  We will factor it with lookup table.
         if (num < 65537) {
           auto w = lookup_table(num);
           ret.insert(ret.end(), w.begin(), w.end());
