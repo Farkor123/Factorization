@@ -99,7 +99,6 @@ namespace number_theorem {
         std::sort(ret.begin(), ret.end());
         return ret;
       }
-      bool flag = true;
       q *= (x[2*i] - x[i]) % num;
       d = utility::gcd(q, num);
       if (d > 1 && d < num) {
@@ -112,7 +111,6 @@ namespace number_theorem {
           }
           i = 0;
           q = 1;
-          flag = false;
         }
         //if d isn't prime and d < 65537 we can factor it by lookup_table
         else if (d < 65537) {
@@ -125,7 +123,6 @@ namespace number_theorem {
           }
           i = 0;
           q = 1;
-          flag = false;
         }
         //else we can factor it by pollard_rho
         else {
@@ -137,11 +134,10 @@ namespace number_theorem {
           }
           i = 0;
           q = 1;
-          flag = false;
         }
       }
       //if d is equal to num, we have to start with different x0
-      if (d == num) {
+      else if (d == num) {
         srand(time(NULL));
         x.clear();
         x.push_back(mpz_class(rand() % (num-2) + 2));
@@ -149,10 +145,9 @@ namespace number_theorem {
         x.push_back(mpz_class(((x.back() * x.back()) - 1) % num));
         i = 0;
         q = 1;
-        flag = false;
       }
       //finally, if none of the above applies, we increment i by 1
-      if (flag) {
+      else {
         //any non-factorable polynomial applies, except for x**2-2
         x.push_back(mpz_class(((x.back() * x.back()) - 1) % num));
         x.push_back(mpz_class(((x.back() * x.back()) - 1) % num));
