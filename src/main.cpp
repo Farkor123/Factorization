@@ -40,28 +40,17 @@ int main() {
     return 0;
   }
   std::cout << "General Number Field Sieve.\n";*/
-  gmp_randclass r(gmp_randinit_default);
-  while (true) {
-    mpz_class num;
-    mpz_ui_pow_ui(num.get_mpz_t(), 2, 70);
-    mpz_class y, z, c = 1;
-    y = z = r.get_z_range(num);
-    std::cout << y << "\n";
-    auto w = number_theorem::simpler_pollard_rho(y);
-    for (auto i : w) {
-      c *= i;
+  int j;
+  std::clock_t start;
+  mpz_class i, y;
+  for (j = 0; j < 5; j++) {
+    start = std::clock();
+    for (i = 40000; i < 60001; i++) {
+      std::cout << i << "\n";
+      y = i;
+      number_theorem::pollard_rho(y);
     }
-    if (c == z) {
-      std::cout << " Yes: ";
-      for (unsigned int i = 0; i < w.size()-1; i++) {
-        std::cout << w[i] << "*";
-      }
-      std::cout << w.back() << "\n";
-    }
-    else {
-      std::cout << " No\n";
-      return -1;
-    }
+    std::cout << "Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms\n";
   }
   return 0;
 }
