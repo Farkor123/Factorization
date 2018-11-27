@@ -46,9 +46,8 @@ int main() {
   for (j = 0; j < 5; j++) {
     start = std::clock();
     for (i = 40000; i < 60001; i++) {
-      std::cout << i << "\n";
       y = i;
-      number_theorem::pollard_rho(y);
+      auto w = number_theorem::pollard_rho(y);
     }
     std::cout << "Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms\n";
   }

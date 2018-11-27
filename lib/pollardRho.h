@@ -11,8 +11,6 @@ namespace number_theorem {
      */
     //vector holding all factors
     std::vector<mpz_class> ret;
-    //  Innitialize random number generator.
-    gmp_randclass r(gmp_randinit_default);
     //  Checking %2 is cheap, so we do that.
     while (num % 2 == 0) {
       ret.push_back(2);
@@ -37,6 +35,8 @@ namespace number_theorem {
       std::sort(ret.begin(), ret.end());
       return ret;
     }
+    //  Innitialize random number generator.
+    gmp_randclass r(gmp_randinit_default);
     //  Let's parametrize algorithm.
     mpz_class x = 2, y = 2, d = 1;
     //  I know, goto.
@@ -55,76 +55,13 @@ namespace number_theorem {
       d = 1;
       goto FLAG;
     }
-    else {
-      //  Else, if d is prime it is a valid factor.
-      if (utility::is_prime(d)) {
-        num /= d;
-        ret.push_back(d);
-        //  If num is now prime, there is no point in further fctorization.
-        if(utility::is_prime(num)) {
-          ret.push_back(num);
-          std::sort(ret.begin(), ret.end());
-          return ret;
-        }
-        //  If now num is less than 2**16, rho is overkill.
-        //  We will factor it with lookup table.
-        if (num < 65537) {
-          auto w = lookup_table(num);
-          ret.insert(ret.end(), w.begin(), w.end());
-          std::sort(ret.begin(), ret.end());
-          return ret;
-        }
-        x = y = 2;
-        d = 1;
-        goto FLAG;
-      }
-      //  If d ain't prime, but is less than 65537, rho is overkill.
-      //  We will use this complex d, factoring it with lookup table.
-      else if(d < 65537) {
-        num /= d;
-        auto w = lookup_table(d);
-        ret.insert(ret.end(), w.begin(), w.end());
-        //  If num is now prime, there is no point in further fctorization.
-        if (utility::is_prime(num)) {
-          ret.push_back(num);
-          std::sort(ret.begin(), ret.end());
-          return ret;
-        }
-        //  If now num is less than 2**16, rho is overkill.
-        //  We will factor it with lookup table.
-        if (num < 65537) {
-          auto w = lookup_table(num);
-          ret.insert(ret.end(), w.begin(), w.end());
-          std::sort(ret.begin(), ret.end());
-          return ret;
-        }
-        x = y = 2;
-        d = 1;
-        goto FLAG;
-      }
-      //  However, if d > 2**16, we will just use Rho on it.
-      else {
-        num /= d;
-        auto w = pollard_rho(d);
-        ret.insert(ret.end(), w.begin(), w.end());
-        //  If num is now prime, there is no point in further fctorization.
-        if (utility::is_prime(num)) {
-          ret.push_back(num);
-          std::sort(ret.begin(), ret.end());
-          return ret;
-        }
-        //  If now num is less than 2**16, rho is overkill.
-        //  We will factor it with lookup table.
-        if (num < 65537) {
-          auto w = lookup_table(num);
-          ret.insert(ret.end(), w.begin(), w.end());
-          std::sort(ret.begin(), ret.end());
-          return ret;
-        }
-        x = y = 2;
-        d = 1;
-        goto FLAG;
-      }
-    }
+    num /= d;
+    auto w = brent_pollard_rho(d);
+    ret.insert(ret.end(), w.begin(), w.end());
+    w.clear();
+    w = brent_pollard_rho(num);
+    ret.insert(ret.end(), w.begin(), w.end());
+    std::sort(ret.begin(), ret.end());
+    return ret;
   }
 }
