@@ -4,9 +4,9 @@
 
 namespace number_theorem {
   std::vector<mpz_class> brent_pollard_rho (mpz_class& num) {
-  /*
-   * An implementation from Brent's paper "An improved Monte Carlo factorization algorithm."
-   */
+    /*
+     * An implementation from Brent's paper "An improved Monte Carlo factorization algorithm."
+     */
     // A vector to hold all factors.
     std::vector<mpz_class> ret;
     while (num % 2 == 0) {
@@ -30,7 +30,7 @@ namespace number_theorem {
     }
     //  Innitialize random number generator.
     gmp_randclass rng(gmp_randinit_default);
-    mpz_class y, m, g=1, r=1, q=1, ys, x;
+    mpz_class y, m, g=1, r=1, q=1, ys, x, k, min;
     y = rng.get_z_range(num-1);
     m = rng.get_z_range(num-1);
     while (g == 1) {
@@ -38,15 +38,16 @@ namespace number_theorem {
       for (mpz_class i = 0; i < r; i++) {
         y = utility::x_squared_minus_one(y) % num;
       }
-      mpz_class k = 0;
+      k = 0;
       while (k < r && g == 1) {
         ys = y;
-        mpz_class min;
-        m <= r-k ? min = m : min = r - k;
+        min;
+        m <= r - k ? min = m : min = r - k;
         for (mpz_class i = 0; i < min; i++) {
           y = utility::x_squared_minus_one(y) % num;
           q = (q * (abs(x - y))) % num;
         }
+        g = gcd(q, num);
         k += m;
       }
       r *= 2;
@@ -57,7 +58,9 @@ namespace number_theorem {
       while (true) {
         ys = utility::x_squared_minus_one(ys) % num;
         g = gcd(abs(x - ys), num);
-        break;
+        if (g > 1 && g != num) {
+          break;
+        }
       }
     }
     num /= g;

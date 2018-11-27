@@ -56,10 +56,10 @@ namespace number_theorem {
       goto FLAG;
     }
     num /= d;
-    auto w = brent_pollard_rho(d);
+    auto w = pollard_rho(d);
     ret.insert(ret.end(), w.begin(), w.end());
     w.clear();
-    w = brent_pollard_rho(num);
+    w = pollard_rho(num);
     ret.insert(ret.end(), w.begin(), w.end());
     std::sort(ret.begin(), ret.end());
     return ret;
